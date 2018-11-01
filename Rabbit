@@ -1,5 +1,5 @@
 extends KinematicBody2D
-
+# currently throwing "Invalid call to function 'flee_from_player' in base 'KinematicBody2D (Rabbit.gd)'. Expected 1 arguments." When Player enters Danger Area.
 var current_behaviour = 0
 var random_if_idle
 #movement variables go here
