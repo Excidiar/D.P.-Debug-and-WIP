@@ -1,0 +1,108 @@
+extends KinematicBody2D
+
+var current_behaviour = 0
+var random_if_idle
+#movement variables go here
+var gravity_limit = 64
+var gravity_accel= 8
+var speed = Vector2()
+var side_speed = 32
+var speed_limit = 96
+#Jumpy Vars
+var jumptime
+var jumptime_min = 10
+var jumptime_max = 40
+#Idly Vars
+var resting = true
+var swap_time = 600
+var fleeing_from = null
+
+func _ready():
+	jumptime = rand_range(jumptime_min,jumptime_max)
+	current_behaviour = 2 #uncomment to test the behaviours individually
+	speed.x -= side_speed
+
+func _process(delta):
+	randomize()
+	#picking a random behaviour between 1 and 2 if no behaviour is active
+	if current_behaviour == 0:
+		random_if_idle= rand_range(1, 2)
+		random_if_idle= int(round(random_if_idle))
+		current_behaviour = random_if_idle
+	if current_behaviour == 1:
+		go_idle_for_a_while()
+	if current_behaviour == 2:
+		go_jump_elsewhere()
+	#if current_behaviour == 3:
+	
+	#if current_behaviour == 4:
+	
+	if current_behaviour == 5:
+		flee_from_player()
+
+func _physics_process(delta):
+	speed.y += gravity_accel
+	if speed.y > gravity_limit:
+		speed.y = gravity_limit
+	jumptime -= 1
+	jumptime = clamp (jumptime,0,jumptime_max)
+	if jumptime == 0 && resting == false && is_on_floor():
+		jumptime = rand_range(jumptime_min,jumptime_max)
+		speed.y = -150
+	else:
+		speed.y += gravity_accel
+	move_and_slide(speed,Vector2(0,-1))
+	
+func go_idle_for_a_while():
+	if current_behaviour == 1:
+		resting=true
+	if resting == true:
+		swap_time -=1
+	if swap_time == 0:
+		swap_time = 600
+		current_behaviour = 0
+		resting = false
+		
+# use timer, then return to behaviour 0
+
+func go_jump_elsewhere():
+	resting = false
+	swap_time -= 1
+	if speed.x >= speed_limit:
+		speed.x = speed_limit
+	if is_on_wall():
+		speed.x = speed.x*-1
+	if speed.x >= 0:
+		$Rabbit_Sprite.flip_h = true
+	else:
+		$Rabbit_Sprite.flip_h = false
+		
+	if swap_time == 0:
+		swap_time = 600
+		current_behaviour = 0
+
+func _on_Danger_Radius_body_entered(body):
+	if body.name == "Player":
+		current_behaviour = 5
+		var fleeing_from = body
+# here include elifs for the 4 and 5 behaviours once 
+# this gets rolling allright, then an else pass.
+
+func _on_Safe_Radius_body_exited(body):
+	if body.name == "Player":
+		#add or(s) for everything else that should 
+		#be affected by this
+		current_behaviour = 0
+
+func flee_from_player(fleeing_from):
+	speed = 0
+	speed = speed_limit
+	
+	if fleeing_from:
+		var fleeing_direction = (fleeing_from.global_position + global_position).normalized()
+		if fleeing_direction > 0:
+			speed.x = speed.x *-1
+		elif fleeing_direction < 0:
+			speed.x = speed.x
+	else:
+		pass
