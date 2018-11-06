@@ -1,5 +1,5 @@
 extends KinematicBody2D
-# currently throwing "Invalid call to function 'flee_from_player' in base 'KinematicBody2D (Rabbit.gd)'. Expected 1 arguments." When Player enters Danger Area.
+
 var current_behaviour = 0
 var random_if_idle
 #movement variables go here
@@ -15,12 +15,14 @@ var jumptime_max = 40
 #Idly Vars
 var resting = true
 var swap_time = 600
-var fleeing_from = null
+var Fleeing = null
+var flee = 1
 
 func _ready():
+	speed.x = speed.x * flee
 	jumptime = rand_range(jumptime_min,jumptime_max)
 	current_behaviour = 2 #uncomment to test the behaviours individually
-	speed.x -= side_speed
+	speed.x += side_speed
 
 func _process(delta):
 	randomize()
@@ -31,14 +33,29 @@ func _process(delta):
 		current_behaviour = random_if_idle
 	if current_behaviour == 1:
 		go_idle_for_a_while()
-	if current_behaviour == 2:
-		go_jump_elsewhere()
-	#if current_behaviour == 3:
-	
-	#if current_behaviour == 4:
-	
-	if current_behaviour == 5:
-		flee_from_player()
+	if current_behaviour >= 2:
+		resting = false
+	swap_time -= 1
+	if speed.x >= speed_limit:
+		speed.x = speed_limit
+	if is_on_wall():
+		speed.x = speed.x*-1
+	if speed.x >= 0:
+		$Rabbit_Sprite.flip_h = true
+	else:
+		$Rabbit_Sprite.flip_h = false
+		
+	if swap_time == 0:
+		swap_time = 600
+		current_behaviour = 0
+	if Fleeing:
+		var fleeing_direction = (Fleeing.global_position - global_position).normalized()
+		if fleeing_direction > 0:
+			flee = 1
+		elif fleeing_direction < 0:
+			flee = -1
+	else:
+		pass
 
 func _physics_process(delta):
 	speed.y += gravity_accel
@@ -65,44 +82,13 @@ func go_idle_for_a_while():
 		
 # use timer, then return to behaviour 0
 
-func go_jump_elsewhere():
-	resting = false
-	swap_time -= 1
-	if speed.x >= speed_limit:
-		speed.x = speed_limit
-	if is_on_wall():
-		speed.x = speed.x*-1
-	if speed.x >= 0:
-		$Rabbit_Sprite.flip_h = true
-	else:
-		$Rabbit_Sprite.flip_h = false
-		
-	if swap_time == 0:
-		swap_time = 600
-		current_behaviour = 0
+#func go_jump_elsewhere():
+	
 
 func _on_Danger_Radius_body_entered(body):
 	if body.name == "Player":
-		current_behaviour = 5
-		var fleeing_from = body
-# here include elifs for the 4 and 5 behaviours once 
-# this gets rolling allright, then an else pass.
+		var Fleeing = body
 
 func _on_Safe_Radius_body_exited(body):
 	if body.name == "Player":
-		#add or(s) for everything else that should 
-		#be affected by this
 		current_behaviour = 0
-
-func flee_from_player(fleeing_from):
-	speed = 0
-	speed = speed_limit
-	
-	if fleeing_from:
-		var fleeing_direction = (fleeing_from.global_position + global_position).normalized()
-		if fleeing_direction > 0:
-			speed.x = speed.x *-1
-		elif fleeing_direction < 0:
-			speed.x = speed.x
-	else:
-		pass
